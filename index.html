@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Futuro + Gerador de Paletas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- SEÇÕES EXEMPLO -->
+<section style="background:#0b0f1a; color:#c8d3e0;">
+  <div class="container">
+    <h1>🌌 Tecnologia do Futuro</h1>
+    <p>IA e automação estão moldando novas experiências digitais.</p>
+    <div class="card" style="background:#1b2a41;">Sistemas inteligentes.</div>
+    <a class="btn" style="background:#7aa2f7; color:#000;">Explorar</a>
+  </div>
+</section>
+
+<section style="background:#071014; color:#b8f2e6;">
+  <div class="container">
+    <h1>🌿 Sustentabilidade</h1>
+    <p>Tecnologias verdes dominarão o futuro.</p>
+    <div class="card" style="background:#0f3a3f;">Energia limpa.</div>
+    <a class="btn" style="background:#4fd1c5; color:#000;">Ver mais</a>
+  </div>
+</section>
+
+<section style="background:#121212; color:#e0e0e0;">
+  <div class="container">
+    <h1>🤖 Trabalho</h1>
+    <p>Automação mudando o mercado.</p>
+    <div class="card" style="background:#2a2a2a;">Novas profissões.</div>
+    <a class="btn" style="background:#a0a0a0; color:#000;">Saiba mais</a>
+  </div>
+</section>
+
+<!-- GERADOR -->
+<section class="generator">
+  <div class="container">
+    <h1>⚙️ Gerador de Paleta</h1>
+    <p>Escolha uma cor base:</p>
+
+    <div class="controls">
+      <input type="color" id="baseColor" value="#7aa2f7">
+      <button id="generateBtn" onclick="generatePalette()">Gerar Paleta</button>
+    </div>
+
+    <div id="preview"></div>
+    <div id="info"></div>
+  </div>
+</section>
+
+<script src="script.js" defer></script>
+</body>
+</html>
