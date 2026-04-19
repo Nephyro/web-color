@@ -1,56 +1,551 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Futuro + Gerador de Paletas</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nephyro Engine v9.1 | Santo Graal Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Inter:wght@300;900&family=JetBrains+Mono:wght@300&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent-dynamic: #7aa2f7;
+            --bg-mystic: #020205;
+        }
+
+        /* --- Global Reset & Cursor --- */
+        * { transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); cursor: none !important; }
+        body { background-color: #050505; color: #f8fafc; overflow-x: hidden; font-family: 'Inter', sans-serif; }
+
+        #custom-cursor {
+            width: 20px; height: 20px; border: 2px solid white; border-radius: 50%;
+            position: fixed; pointer-events: none; z-index: 9999;
+            transform: translate(-50%, -50%); transition: width 0.2s, height 0.2s, border-color 0.2s;
+            mix-blend-mode: difference;
+        }
+
+        /* --- Typography --- */
+        .font-serif { font-family: 'Cormorant Garamond', serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* --- Glassmorphism Superior --- */
+        .glass-master {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* --- 3D Card Physics --- */
+        .card-3d-container { perspective: 1200px; }
+        .card-3d-inner { 
+            position: relative; width: 100%; height: 100%; 
+            transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1); 
+            transform-style: preserve-3d; 
+        }
+        .card-3d-container.flipped .card-3d-inner { transform: rotateY(180deg); }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+
+        /* --- Overclock Effects --- */
+        @keyframes shake {
+            0% { transform: translate(0,0); }
+            25% { transform: translate(1px, -1px); }
+            50% { transform: translate(-1px, 1px); }
+            100% { transform: translate(0,0); }
+        }
+        .overclock-active { animation: shake 0.1s infinite; filter: saturate(1.5) brightness(1.1); }
+
+        /* --- Particles & UI --- */
+        #particle-canvas { position: absolute; inset: 0; pointer-events: none; opacity: 0.2; }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 100%; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 5px; }
+
+        /* Estilo para os botões de modo */
+        .mode-btn { 
+            background: rgba(255,255,255,0.05); 
+            border: 1px solid rgba(255,255,255,0.1); 
+        }
+        .mode-btn.mode-active { 
+            background: var(--accent-dynamic) !important; 
+            color: black !important; 
+            box-shadow: 0 0 15px var(--accent-dynamic); 
+        }
+
+        /* Canvas da Viewport */
+        #view-canvas { 
+            position: absolute; 
+            inset: 0; 
+            width: 100%; 
+            height: 100%; 
+            opacity: 0; 
+            transition: opacity 0.8s ease; 
+        }
+
+        /* Texto v2 vibrante */
+        .v2-text-vibe {
+            background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+            background-size: 200% auto;
+            color: transparent !important;
+            -webkit-background-clip: text;
+            animation: rainbow-shimmer 3s linear infinite;
+        }
+        @keyframes rainbow-shimmer { to { background-position: 200% center; } }
+
+    </style>
 </head>
-<body>
+<body class="antialiased">
 
-<!-- SEÇÕES EXEMPLO -->
-<section style="background:#0b0f1a; color:#c8d3e0;">
-  <div class="container">
-    <h1>🌌 Tecnologia do Futuro</h1>
-    <p>IA e automação estão moldando novas experiências digitais.</p>
-    <div class="card" style="background:#1b2a41;">Sistemas inteligentes.</div>
-    <a class="btn" style="background:#7aa2f7; color:#000;">Explorar</a>
-  </div>
-</section>
+    <div id="custom-cursor"></div>
 
-<section style="background:#071014; color:#b8f2e6;">
-  <div class="container">
-    <h1>🌿 Sustentabilidade</h1>
-    <p>Tecnologias verdes dominarão o futuro.</p>
-    <div class="card" style="background:#0f3a3f;">Energia limpa.</div>
-    <a class="btn" style="background:#4fd1c5; color:#000;">Ver mais</a>
-  </div>
-</section>
+    <section id="mystic-section" class="relative py-24 px-6 min-h-screen flex items-center overflow-hidden transition-all duration-500">
+        
+        <canvas id="particle-canvas"></canvas>
+        <div id="aurora-bg" class="absolute inset-0 opacity-15 pointer-events-none blur-[140px]"></div>
+        
+        <div class="max-w-[1400px] mx-auto relative z-10 w-full">
+            
+            <div class="flex flex-col lg:row justify-between items-start lg:items-center mb-16 gap-6 border-b border-white/5 pb-10">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-3">
+                        <span class="w-1.5 h-1.5 rounded-full bg-accent-dynamic animate-pulse"></span>
+                        <span class="text-accent-dynamic font-mono text-[10px] tracking-[0.6em] uppercase opacity-70">Design_Spectral_v9.1</span>
+                    </div>
+                    <h2 class="text-5xl font-serif text-white italic tracking-tighter">Engine <span class="font-sans not-italic font-black text-accent-dynamic">Graal_</span></h2>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 font-mono text-[9px] uppercase tracking-[0.2em] text-slate-600">
+                    <div class="border-l border-white/10 pl-4"><p>Latency</p><p id="res-val" class="text-white text-xs mt-1">0.00ms</p></div>
+                    <div class="border-l border-white/10 pl-4"><p>Harmony</p><p class="text-accent-dynamic text-xs mt-1">Calibrado</p></div>
+                    <div class="border-l border-white/10 pl-4"><p>Freq</p><p id="freq-val" class="text-white text-xs mt-1">440Hz</p></div>
+                    <div class="border-l border-white/10 pl-4"><p>Core_Sync</p><p class="text-white text-xs mt-1">Active</p></div>
+                </div>
+            </div>
 
-<section style="background:#121212; color:#e0e0e0;">
-  <div class="container">
-    <h1>🤖 Trabalho</h1>
-    <p>Automação mudando o mercado.</p>
-    <div class="card" style="background:#2a2a2a;">Novas profissões.</div>
-    <a class="btn" style="background:#a0a0a0; color:#000;">Saiba mais</a>
-  </div>
-</section>
+            <div class="grid lg:grid-cols-12 gap-8">
+                
+                <div class="lg:col-span-3 space-y-6">
+                    <div class="glass-master p-10 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden bg-black/30 group">
+                        <div id="orb-shadow" class="absolute inset-0 rounded-full blur-[70px] opacity-30 group-hover:opacity-50 transition-opacity duration-1000"></div>
+                        <div class="relative z-10 flex flex-col items-center">
+                            <input type="color" id="baseColor" value="#7aa2f7" class="w-36 h-36 cursor-pointer bg-transparent border-none scale-110 hover:scale-125 transition-transform appearance-none">
+                            <h3 id="hexLabel" class="text-3xl font-serif text-white tracking-widest mt-8">#7AA2F7</h3>
+                        </div>
+                        
+                        <button id="applyBtn" onclick="updateGraalEngine()" class="relative z-10 w-full mt-8 py-5 rounded-xl font-serif italic uppercase text-xs tracking-[0.3em] font-black shadow-lg hover:brightness-110 active:scale-95 transition-all" style="background-color: #7aa2f7; color: black;">
+                            Transmutar_Interface
+                        </button>
+                    </div>
 
-<!-- GERADOR -->
-<section class="generator">
-  <div class="container">
-    <h1>⚙️ Gerador de Paleta</h1>
-    <p>Escolha uma cor base:</p>
+                    <div id="legend-panel" class="space-y-2.5">
+                        </div>
+                </div>
 
-    <div class="controls">
-      <input type="color" id="baseColor" value="#7aa2f7">
-      <button id="generateBtn" onclick="generatePalette()">Gerar Paleta</button>
-    </div>
+                <div class="lg:col-span-6 sticky top-10">
+                    <div id="viewport" class="h-full min-h-[500px] rounded-[2rem] border border-white/5 bg-[#030306] overflow-hidden flex flex-col justify-between relative shadow-inner">
+                        <canvas id="view-canvas"></canvas>
+                        
+                        <div class="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,4px_100%]"></div>
+                        
+                        <div class="relative z-10 p-12 flex justify-between items-start w-full">
+                            <div class="p-4 border-l-2 border-accent-dynamic bg-accent-dynamic/5 rounded-r-xl">
+                                <p id="mode-label" class="text-[9px] font-mono text-accent-dynamic uppercase tracking-widest opacity-70">Modo_01: Atmosfera_Viva</p>
+                                <h4 class="text-white font-serif italic text-xl mt-1">Composição Espectral</h4>
+                            </div>
 
-    <div id="preview"></div>
-    <div id="info"></div>
-  </div>
-</section>
+                            <div class="flex gap-2 bg-black/40 p-1.5 rounded-full border border-white/10 backdrop-blur-xl">
+                                <button onclick="setEngineMode(1)" class="mode-btn w-8 h-8 rounded-full text-[10px] font-black transition-all mode-active">V1</button>
+                                <button onclick="setEngineMode(2)" class="mode-btn w-8 h-8 rounded-full text-[10px] font-black transition-all">V2</button>
+                                <button onclick="setEngineMode(3)" class="mode-btn w-8 h-8 rounded-full text-[10px] font-black transition-all">V3</button>
+                                <button onclick="setEngineMode(4)" class="mode-btn w-8 h-8 rounded-full text-[10px] font-black transition-all">V4</button>
+                            </div>
+                        </div>
 
-<script src="script.js" defer></script>
+                        <div class="relative z-10 p-12">
+                            <h3 class="text-7xl font-serif text-white leading-tight italic">
+                                A Geometria <br>
+                                <span id="dynamic-span" class="text-accent-dynamic not-italic font-black uppercase tracking-tighter">da Cor_</span>
+                            </h3>
+                        </div>
+                        
+                        <svg id="view-svg" class="absolute bottom-0 left-0 w-full h-32 opacity-15 pointer-events-none transition-all duration-700" viewBox="0 0 1000 100">
+                            <path id="wave-path" d="M0 50 Q 250 10 500 50 T 1000 50" fill="none" stroke="currentColor" class="text-accent-dynamic" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-3 space-y-6 sticky top-10">
+                    <div class="glass-master p-8 rounded-[2rem] border border-white/5 h-full flex flex-col gap-10 bg-black/30">
+                        <div class="space-y-3">
+                            <p class="text-accent-dynamic font-mono text-[9px] tracking-widest uppercase opacity-70">Luminance_Index</p>
+                            <div class="flex items-center gap-4">
+                                <div class="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <div id="lum-bar" class="h-full bg-accent-dynamic"></div>
+                                </div>
+                                <span id="lum-text" class="text-white font-mono text-xs">0%</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 flex-1">
+                            <p class="text-[9px] font-mono text-slate-600 uppercase tracking-widest border-b border-white/5 pb-2">Ambiente_Logs</p>
+                            <div id="system-logs" class="font-mono text-[8px] text-slate-500 space-y-2.5 uppercase tracking-wider"></div>
+                        </div>
+
+                        <button id="exportTokenBtn" onclick="triggerOverclock()" class="w-full group relative overflow-hidden glass-master border border-accent-dynamic/30 p-6 rounded-2xl hover:border-accent-dynamic transition-all duration-500 bg-black/20">
+                            <div id="overclock-glow" class="absolute inset-0 bg-accent-dynamic opacity-0 transition-opacity"></div>
+                            <div class="relative z-10 flex justify-between items-center text-accent-dynamic group-hover:text-black">
+                                <span class="font-mono text-[10px] font-bold uppercase tracking-widest">Execute_Overclock</span>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8 mt-16">
+                
+                <div class="card-3d-container h-72 group cursor-pointer" onclick="this.classList.toggle('flipped')">
+                    <div class="card-3d-inner">
+                        <div class="card-3d-front absolute inset-0 glass-master border border-white/5 rounded-[2.5rem] p-10 flex flex-col justify-between backface-hidden bg-white/[0.01] hover:border-accent-dynamic/40 transition-colors">
+                            <div class="flex justify-between items-center">
+                                <span class="text-accent-dynamic font-mono text-[10px] uppercase tracking-widest opacity-70">Protocolo_01</span>
+                                <span class="text-4xl font-serif italic text-white/10 group-hover:text-accent-dynamic/20">01</span>
+                            </div>
+                            <h5 class="text-3xl font-serif italic text-white leading-tight">Neural <span class="font-sans not-italic font-black text-white/90">Sync_</span></h5>
+                            <span class="text-slate-600 text-[10px] uppercase font-mono tracking-widest border-t border-white/5 pt-3">Clique p/ decodificar</span>
+                        </div>
+                        <div class="card-3d-back dynamic-back absolute inset-0 rounded-[2.5rem] p-10 flex flex-col justify-center items-center rotate-y-180 backface-hidden shadow-2xl" style="background-color: #7aa2f7; color: black;">
+                            <p class="font-mono text-[10px] font-black uppercase mb-5 tracking-widest border border-black/20 px-3 py-1 rounded-full">Status: Calibrado</p>
+                            <p class="text-center font-serif italic text-base leading-relaxed opacity-90">Mapeamento direto da retina para sincronização cromática de hardware v9.1.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-3d-container h-72 group cursor-pointer" onclick="this.classList.toggle('flipped')">
+                    <div class="card-3d-inner">
+                        <div class="card-3d-front absolute inset-0 glass-master border border-white/5 rounded-[2.5rem] p-10 flex flex-col justify-between backface-hidden bg-white/[0.01] hover:border-accent-dynamic/40 transition-colors">
+                            <div class="flex justify-between items-center">
+                                <span class="text-accent-dynamic font-mono text-[10px] uppercase tracking-widest opacity-70">Protocolo_02</span>
+                                <span class="text-4xl font-serif italic text-white/10 group-hover:text-accent-dynamic/20">02</span>
+                            </div>
+                            <h5 class="text-3xl font-serif italic text-white leading-tight">Cromodinâmica <span class="font-sans not-italic font-black text-white/90">AI_</span></h5>
+                            <span class="text-slate-600 text-[10px] uppercase font-mono tracking-widest border-t border-white/5 pt-3">Clique p/ decodificar</span>
+                        </div>
+                        <div class="card-3d-back dynamic-back absolute inset-0 rounded-[2.5rem] p-10 flex flex-col justify-center items-center rotate-y-180 backface-hidden shadow-2xl" style="background-color: #7aa2f7; color: black;">
+                            <p class="font-mono text-[10px] font-black uppercase mb-5 tracking-widest border border-black/20 px-3 py-1 rounded-full">Análise Fotônica</p>
+                            <p class="text-center font-serif italic text-base leading-relaxed opacity-90">Cálculo procedural de intensidade luminosa baseado na cor Seed.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-3d-container h-72 group cursor-pointer" onclick="this.classList.toggle('flipped')">
+                    <div class="card-3d-inner">
+                        <div class="card-3d-front absolute inset-0 glass-master border border-white/5 rounded-[2.5rem] p-10 flex flex-col justify-between backface-hidden bg-white/[0.01] hover:border-accent-dynamic/40 transition-colors">
+                            <div class="flex justify-between items-center">
+                                <span class="text-accent-dynamic font-mono text-[10px] uppercase tracking-widest opacity-70">Protocolo_03</span>
+                                <span class="text-4xl font-serif italic text-white/10 group-hover:text-accent-dynamic/20">03</span>
+                            </div>
+                            <h5 class="text-3xl font-serif italic text-white leading-tight">Token <span class="font-sans not-italic font-black text-white/90">Export_</span></h5>
+                            <span class="text-slate-600 text-[10px] uppercase font-mono tracking-widest border-t border-white/5 pt-3">Clique p/ decodificar</span>
+                        </div>
+                        <div class="card-3d-back dynamic-back absolute inset-0 bg-black border-4 rounded-[2.5rem] p-10 flex flex-col justify-center items-center rotate-y-180 backface-hidden shadow-2xl" style="border-color: #7aa2f7; color: #7aa2f7;">
+                            <p class="font-mono text-[11px] font-black uppercase mb-4 tracking-wider">CSS Token Global</p>
+                            <code class="bg-black p-3 text-[9px] rounded-lg mb-4 font-mono select-all">--design-core: dynamic;</code>
+                            <p class="text-[10px] uppercase font-bold tracking-widest">Setup Completo</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <script>
+        /**
+         * ENGINE CROMÁTICA v9.1 - ACESSIBILIDADE WCAG
+         */
+
+        // 1. Cálculos WCAG de Luminosidade e Contraste
+        function getLuminance(hex) {
+            const rgb = hexToRGB(hex);
+            const a = [rgb.r, rgb.g, rgb.b].map(v => {
+                v /= 255;
+                return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+            });
+            return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+        }
+
+        function hexToRGB(hex) {
+            return {
+                r: parseInt(hex.slice(1, 3), 16),
+                g: parseInt(hex.slice(3, 5), 16),
+                b: parseInt(hex.slice(5, 7), 16)
+            };
+        }
+
+        function hexToHSL(H) {
+            let r = parseInt(H.substr(1, 2), 16) / 255, g = parseInt(H.substr(3, 2), 16) / 255, b = parseInt(H.substr(5, 2), 16) / 255;
+            let cmin = Math.min(r, g, b), cmax = Math.max(r, g, b), delta = cmax - cmin;
+            let h = 0, s = 0, l = 0;
+            if (delta !== 0) { if (cmax === r) h = ((g - b) / delta) % 6; else if (cmax === g) h = (b - r) / delta + 2; else h = (r - g) / delta + 4; }
+            h = Math.round(h * 60); if (h < 0) h += 360;
+            l = (cmax + cmin) / 2; s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+            return { h, s: s * 100, l: l * 100 };
+        }
+
+        // 2. ENGINE PRINCIPAL
+        const updateGraalEngine = () => {
+            const base = document.getElementById("baseColor").value;
+            const c = hexToHSL(base);
+            const lum = getLuminance(base); // Cálculo WCAG
+            const root = document.documentElement;
+            const section = document.getElementById("mystic-section");
+            
+            // Design Tokens
+            root.style.setProperty("--accent-dynamic", base);
+            
+            // Reatividade Atmosférica com Blur Momentâneo (Flash)
+            section.style.filter = 'brightness(1.5) blur(3px)';
+            section.style.transform = 'scale(1.01)';
+            
+            setTimeout(() => {
+                section.style.filter = 'brightness(1) blur(0px)';
+                section.style.transform = 'scale(1)';
+            }, 300);
+
+            document.getElementById("aurora-bg").style.background = `radial-gradient(circle at ${Math.random()*100}% ${Math.random()*100}%, ${base}, transparent)`;
+            document.getElementById("orb-shadow").style.backgroundColor = base;
+            document.getElementById("viewport").style.borderColor = `${base}22`;
+            
+            // Labels Técnicas
+            document.getElementById("hexLabel").innerText = base.toUpperCase();
+            document.getElementById("hexLabel").style.color = base;
+            document.getElementById("lum-text").innerText = Math.round(c.l) + "%";
+            document.getElementById("lum-bar").style.width = c.l + "%";
+            
+            // === ACESSIBILIDADE INTELIGENTE ===
+            const isLightColor = lum > 0.45; // WCAG Threshold para texto preto/branco
+            const textColor = isLightColor ? "black" : "white";
+            
+            // Atualizar Botão Transmutar
+            const applyBtn = document.getElementById("applyBtn");
+            applyBtn.style.backgroundColor = base;
+            applyBtn.style.color = textColor; // Texto dinâmico p/ leitura
+            applyBtn.style.boxShadow = `0 12px 30px ${base}44`;
+
+            // Atualizar Verso dos Cards
+            const cardBacks = document.querySelectorAll('.dynamic-back');
+            cardBacks.forEach(back => {
+                // Aplica cor do texto apenas nos cards que não são o Protocolo 3 (que tem lógica própria)
+                if (!back.classList.contains('border-2')) {
+                    back.style.backgroundColor = base;
+                    back.style.color = textColor;
+                    back.style.boxShadow = `0 15px 50px ${base}55`;
+                }
+            });
+
+            // Geração de Legendas Dinâmicas
+            const tones = [
+                { name: 'Essência', hex: base },
+                { name: 'Realce', hex: `hsl(${c.h}, ${c.s}%, 80%)` },
+                { name: 'Sombra', hex: `hsl(${c.h}, ${c.s * 0.4}%, 12%)` }
+            ];
+            
+            document.getElementById("legend-panel").innerHTML = tones.map(t => `
+                <div class="flex items-center justify-between p-4 bg-white/[0.01] border border-white/5 rounded-xl hover:border-accent-dynamic/30 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="w-2 h-2 rounded-full" style="background: ${t.hex}; box-shadow: 0 0 10px ${t.hex}"></div>
+                        <span class="text-[9px] font-mono text-slate-500 uppercase">${t.name}</span>
+                    </div>
+                    <span class="text-[9px] font-mono text-white opacity-40">${t.hex.toUpperCase()}</span>
+                </div>
+            `).join('');
+
+            // Logs
+            const log = document.getElementById("system-logs");
+            const entry = document.createElement('p');
+            entry.innerText = `> RE-CALIBRAÇÃO: ${base.toUpperCase()} [LUM: ${lum.toFixed(2)}]`;
+            log.prepend(entry);
+            if(log.children.length > 7) log.lastChild.remove();
+
+            // Dashboard Data Randomization
+            document.getElementById("res-val").innerText = (Math.random() * 3).toFixed(2) + "ms";
+            document.getElementById("freq-val").innerText = (432 + Math.random() * 8).toFixed(0) + "Hz";
+        };
+
+        // 3. OVERCLOCK FUNCTION
+        function triggerOverclock() {
+            const section = document.getElementById('mystic-section');
+            const lumBar = document.getElementById('lum-bar');
+            const lumText = document.getElementById('lum-text');
+            const glow = document.getElementById('overclock-glow');
+
+            glow.style.opacity = "1";
+            section.classList.add('overclock-active');
+            lumBar.style.width = "100%";
+            lumBar.style.backgroundColor = "#fff";
+            lumBar.style.boxShadow = "0 0 30px #fff";
+            lumText.innerText = "OVERLOAD%";
+            lumText.style.color = "#fff";
+
+            const log = document.getElementById("system-logs");
+            const entry = document.createElement('p');
+            entry.innerText = `> !! CRITICAL_EXPORT: SOBRECARGA DETECTADA !!`;
+            entry.style.color = "#fff"; entry.style.fontWeight = "bold";
+            log.prepend(entry);
+
+            setTimeout(() => {
+                glow.style.opacity = "0";
+                section.classList.remove('overclock-active');
+                updateGraalEngine(); // Retorna ao estado normal
+                lumBar.style.backgroundColor = "var(--accent-dynamic)";
+                lumBar.style.boxShadow = "none";
+                lumText.style.color = "white";
+                entry.style.color = "var(--accent-dynamic)"; entry.style.fontWeight = "normal";
+                entry.innerText = `> EXPORT_SUCCESS: TOKENS ARQUIVADOS.`;
+            }, 1600);
+        }
+
+        // 4. EFEITOS VISUAIS (WAVES, PARTICLES, CURSOR)
+        const cursor = document.getElementById('custom-cursor');
+        document.addEventListener('mousemove', e => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() {
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 1.2;
+                this.speedX = Math.random() * 0.3 - 0.15;
+                this.speedY = Math.random() * 0.3 - 0.15;
+            }
+            update() {
+                this.x += this.speedX; this.y += this.speedY;
+                if(this.x > canvas.width || this.x < 0) this.speedX *= -1;
+                if(this.y > canvas.height || this.y < 0) this.speedY *= -1;
+            }
+            draw() {
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-dynamic');
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        function init() { particles = []; for(let i=0; i<70; i++) particles.push(new Particle()); }
+        function animate() {
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+
+        let phase = 0;
+        function animateWave() {
+            phase += 0.04;
+            const path = document.getElementById("wave-path");
+            if(path) {
+                const d = `M0 50 Q 250 ${50 + Math.sin(phase) * 35} 500 50 T 1000 ${50 + Math.sin(phase) * 25}`;
+                path.setAttribute("d", d);
+            }
+            requestAnimationFrame(animateWave);
+        }
+
+        // 5. LISTENERS DE INPUT
+        document.getElementById("baseColor").addEventListener("input", (e) => {
+            const val = e.target.value;
+            document.getElementById("hexLabel").innerText = val.toUpperCase();
+            document.getElementById("hexLabel").style.color = val;
+            document.getElementById("orb-shadow").style.backgroundColor = val;
+            document.getElementById("custom-cursor").style.borderColor = val;
+        });
+
+        // INICIALIZAÇÃO ÚNICA
+        init(); animate(); animateWave(); updateGraalEngine();
+
+        let currentMode = 1;
+        const canvasV = document.getElementById('view-canvas');
+        const ctxV = canvasV.getContext('2d');
+        let particlesV = [];
+
+        function setEngineMode(mode) {
+            currentMode = mode;
+            const labels = ["Atmosfera_Viva", "Espectro_Vibrante", "Osciloscópio_Ativo", "Geometria_Expandida"];
+            document.getElementById('mode-label').innerText = `Modo_0${mode}: ${labels[mode-1]}`;
+            
+            // Atualiza botões
+            document.querySelectorAll('.mode-btn').forEach((btn, i) => {
+                btn.classList.toggle('mode-active', i === mode - 1);
+            });
+
+            // Toggle de visibilidade entre SVG (V1, V2) e Canvas (V3, V4)
+            document.getElementById('view-svg').style.opacity = mode <= 2 ? "0.2" : "0";
+            canvasV.style.opacity = mode >= 3 ? "1" : "0";
+            
+            // Efeito especial V2
+            document.getElementById('dynamic-span').classList.toggle('v2-text-vibe', mode === 2);
+            
+            if(mode === 4) initV4();
+        }
+
+        // Inicializador para o Modo 4 (Partículas)
+        function initV4() {
+            canvasV.width = canvasV.offsetWidth;
+            canvasV.height = canvasV.offsetHeight;
+            particlesV = [];
+            for(let i=0; i<100; i++) {
+                particlesV.push({ 
+                    x: Math.random() * canvasV.width, 
+                    y: Math.random() * canvasV.height, 
+                    r: Math.random() * 2, 
+                    s: Math.random() * 0.5 + 0.2 
+                });
+            }
+        }
+
+        // Loop de renderização da Viewport
+        function renderViewport() {
+            if (currentMode >= 3) {
+                ctxV.clearRect(0, 0, canvasV.width, canvasV.height);
+                const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-dynamic');
+                ctxV.strokeStyle = accent; 
+                ctxV.fillStyle = accent;
+
+                if (currentMode === 3) {
+                    // Modo Osciloscópio
+                    ctxV.beginPath(); ctxV.lineWidth = 2;
+                    for (let i = 0; i < canvasV.width; i++) {
+                        const y = (canvasV.height / 2) + Math.sin(i * 0.02 + Date.now()*0.005) * 40;
+                        i === 0 ? ctxV.moveTo(i, y) : ctxV.lineTo(i, y);
+                    }
+                    ctxV.stroke();
+                } else if (currentMode === 4) {
+                    // Modo Geometria Expandida
+                    particlesV.forEach(p => {
+                        p.y -= p.s; if(p.y < 0) p.y = canvasV.height;
+                        ctxV.beginPath(); ctxV.arc(p.x, p.y, p.r, 0, Math.PI*2); ctxV.fill();
+                    });
+                }
+            }
+            requestAnimationFrame(renderViewport);
+        }
+
+        // Chame isso no final da sua inicialização original
+        renderViewport();
+
+    </script>
 </body>
 </html>
